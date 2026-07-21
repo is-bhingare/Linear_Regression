@@ -1,12 +1,12 @@
 """
 ==============================================================================
- SIMPLE LINEAR REGRESSION PROJECT: Salary vs. Years of Experience
+ SIMPLE LINEAR REGRESSION PROJECT: Sales vs. Newspaper Advertising
 ==============================================================================
-Goal: Predict Salary based on Years of Experience using a single-variable
+Goal: Predict Sales based on Newspaper Advertising using a single-variable
       (simple) linear regression model.
 
-Works out of the box with the classic "Salary_Data.csv" dataset
-(columns: YearsExperience, Salary). If your CSV has different column
+Works out of the box with the classic "Advertising.csv" dataset
+(columns: Newspaper, Sales). If your CSV has different column
 names, just update the CONFIG section below — nothing else needs to change.
 ==============================================================================
 """
@@ -14,9 +14,9 @@ names, just update the CONFIG section below — nothing else needs to change.
 # -----------------------------------------------------------------------
 # 0. CONFIGURATION — change these two lines to match your CSV
 # -----------------------------------------------------------------------
-CSV_PATH = "Salary_Data.csv"     # path to your downloaded dataset
-X_COLUMN = "YearsExperience"     # the predictor (independent variable)
-Y_COLUMN = "Salary"              # the target (dependent variable)
+CSV_PATH = "C:\\Users\\Ishita Bhingare\\Downloads\\Advertising.csv"     # path to your downloaded dataset
+X_COLUMN = "Newspaper"     # the predictor (independent variable)
+Y_COLUMN = "Sales"              # the target (dependent variable)
 
 
 # -----------------------------------------------------------------------
@@ -155,7 +155,7 @@ print(f"\nModel equation:  {Y_COLUMN} = {slope:.2f} * {X_COLUMN} + {intercept:.2
 print(f"Slope (coefficient): {slope:.2f}")
 print(f"Intercept:           {intercept:.2f}")
 
-# Interpretation for a Salary/Experience example:
+# Interpretation for a Sales/Newspaper example:
 # - slope: each additional unit of X increases the predicted Y by this amount
 # - intercept: predicted Y when X = 0
 
