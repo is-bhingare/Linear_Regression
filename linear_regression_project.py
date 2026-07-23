@@ -1,263 +1,187 @@
-"""
-==============================================================================
- SIMPLE LINEAR REGRESSION PROJECT: Sales vs. Newspaper Advertising
-==============================================================================
-Goal: Predict Sales based on Newspaper Advertising using a single-variable
-      (simple) linear regression model.
+# ============================================================
+# MINI PROJECT: Simple Linear Regression
+# Predicting Sales based on Newspaper Advertising Budget
+# ============================================================
+# This project uses one input variable (Newspaper Advertising Budget) to
+# predict one output variable (Sales) using Simple Linear Regression.
 
-Works out of the box with the classic "Advertising.csv" dataset
-(columns: Newspaper, Sales). If your CSV has different column
-names, just update the CONFIG section below — nothing else needs to change.
-==============================================================================
-"""
-
-# -----------------------------------------------------------------------
-# 0. CONFIGURATION — change these two lines to match your CSV
-# -----------------------------------------------------------------------
-CSV_PATH = "C:\\Users\\Ishita Bhingare\\Downloads\\Advertising.csv"     # path to your downloaded dataset
-X_COLUMN = "Newspaper"     # the predictor (independent variable)
-Y_COLUMN = "Sales"              # the target (dependent variable)
+# ------------------------------------------------------------
+# CONFIG - change these if your CSV file/column names are different
+# ------------------------------------------------------------
+FILE_NAME = "Advertising.csv"
+INPUT_COLUMN = "Newspaper"
+OUTPUT_COLUMN = "Sales"
 
 
-# -----------------------------------------------------------------------
-# 1. IMPORT LIBRARIES
-# -----------------------------------------------------------------------
-import numpy as np
+# ------------------------------------------------------------
+# STEP 1: Import the libraries we need
+# ------------------------------------------------------------
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
 
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
-# Cosmetic settings for nicer plots
-sns.set_style("whitegrid")
-plt.rcParams["figure.figsize"] = (8, 5)
+
+# ------------------------------------------------------------
+# STEP 2: Load the dataset
+# ------------------------------------------------------------
+dataset = pd.read_csv("C:\\Users\\Ishita Bhingare\\Downloads\\Advertising.csv")
+
+# Always good to check the real column names first, in case they
+# don't match what we expect above.
+print("Columns found in the file:", dataset.columns.tolist())
+
+print("\nFirst 5 rows of the dataset:")
+print(dataset.head())
 
 
-# -----------------------------------------------------------------------
-# 2. DATA PREPARATION — load and clean the dataset
-# -----------------------------------------------------------------------
-print("=" * 60)
-print("STEP 1: DATA PREPARATION")
-print("=" * 60)
+# ------------------------------------------------------------
+# STEP 3: Data preprocessing (cleaning the data)
+# ------------------------------------------------------------
+print("\nDataset info:")
+print(dataset.info())
 
-# Load the CSV file into a Pandas DataFrame
-df = pd.read_csv("C:\\Users\\Ishita Bhingare\\Downloads\\Advertising.csv")
+print("\nChecking for missing values:")
+print(dataset.isnull().sum())
 
-print(f"\nDataset shape: {df.shape[0]} rows, {df.shape[1]} columns")
-print("\nFirst 5 rows:")
-print(df.head())
+# If there are any missing values, we simply remove those rows.
+# For a small, simple dataset like this, that is enough.
+dataset = dataset.dropna()
 
-print("\nData types and non-null counts:")
-print(df.info())
+# Removing duplicate rows, if any
+dataset = dataset.drop_duplicates()
 
-# Check for missing values — regression can't handle NaNs
-print("\nMissing values per column:")
-print(df.isnull().sum())
-
-# Drop rows with missing values in our two columns of interest (if any).
-# In a bigger project you might impute instead of dropping, but for a
-# simple single-predictor model, dropping is usually fine.
-df = df.dropna(subset=[X_COLUMN, Y_COLUMN])
-
-# Check for duplicate rows
-duplicates = df.duplicated().sum()
-print(f"\nDuplicate rows found: {duplicates}")
-df = df.drop_duplicates()
-
-print(f"\nShape after cleaning: {df.shape}")
+print("\nStatistical summary of the data:")
+print(dataset.describe())
 
 
-# -----------------------------------------------------------------------
-# 3. EXPLORATORY DATA ANALYSIS (EDA)
-# -----------------------------------------------------------------------
-print("\n" + "=" * 60)
-print("STEP 2: EXPLORATORY DATA ANALYSIS")
-print("=" * 60)
+# ------------------------------------------------------------
+# STEP 4: Exploratory Data Analysis (EDA)
+# ------------------------------------------------------------
+# Checking how strongly the two variables are related.
+# A value close to 1 means a strong positive linear relationship.
+correlation = dataset[INPUT_COLUMN].corr(dataset[OUTPUT_COLUMN])
+print(f"\nCorrelation between {INPUT_COLUMN} and {OUTPUT_COLUMN}: {correlation:.2f}")
 
-# Summary statistics: mean, std, min, max, quartiles
-print("\nSummary statistics:")
-print(df.describe())
-
-# Correlation between predictor and target.
-# A value close to +1 or -1 means a strong linear relationship —
-# exactly what we want before fitting a linear model.
-correlation = df[X_COLUMN].corr(df[Y_COLUMN])
-print(f"\nCorrelation between {X_COLUMN} and {Y_COLUMN}: {correlation:.4f}")
-
-# Scatter plot to visually inspect the relationship before modeling
-plt.figure()
-plt.scatter(df[X_COLUMN], df[Y_COLUMN], color="steelblue", edgecolor="white", s=70)
-plt.title(f"{Y_COLUMN} vs {X_COLUMN} (Raw Data)")
-plt.xlabel(X_COLUMN)
-plt.ylabel(Y_COLUMN)
-plt.tight_layout()
-plt.savefig("01_raw_data_scatter.png", dpi=120)
-plt.close()
-print("\nSaved plot: 01_raw_data_scatter.png")
-
-# Histogram of the target variable to check its distribution
-plt.figure()
-sns.histplot(df[Y_COLUMN], kde=True, color="darkorange")
-plt.title(f"Distribution of {Y_COLUMN}")
-plt.xlabel(Y_COLUMN)
-plt.tight_layout()
-plt.savefig("02_target_distribution.png", dpi=120)
-plt.close()
-print("Saved plot: 02_target_distribution.png")
+# A simple scatter plot to see the relationship visually before
+# we even build the model.
+plt.scatter(dataset[INPUT_COLUMN], dataset[OUTPUT_COLUMN], color="blue")
+plt.title(f"{OUTPUT_COLUMN} vs {INPUT_COLUMN}")
+plt.xlabel(INPUT_COLUMN)
+plt.ylabel(OUTPUT_COLUMN)
+plt.savefig("scatter_plot.png")
+plt.show()
 
 
-# -----------------------------------------------------------------------
-# 4. SPLIT DATA INTO TRAIN / TEST SETS
-# -----------------------------------------------------------------------
-print("\n" + "=" * 60)
-print("STEP 3: TRAIN-TEST SPLIT")
-print("=" * 60)
+# ------------------------------------------------------------
+# STEP 5: Separating input (X) and output (y)
+# ------------------------------------------------------------
+# X must be 2D (that is why we use double square brackets),
+# y can stay 1D.
+X = dataset[[INPUT_COLUMN]]
+y = dataset[OUTPUT_COLUMN]
 
-# X must be 2D (a DataFrame of one column), y is 1D (a Series).
-# Scikit-learn's fit() method expects X in shape (n_samples, n_features).
-X = df[[X_COLUMN]]
-y = df[Y_COLUMN]
 
-# 80% of the data is used to train the model, 20% is held back to
-# test how well the model generalizes to unseen data.
-# random_state fixes the shuffle so results are reproducible.
+# ------------------------------------------------------------
+# STEP 6: Splitting data into training set and testing set
+# ------------------------------------------------------------
+# We train the model on 80% of the data, and keep 20% aside to
+# test how well it performs on data it has not seen before.
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42
+    X, y, test_size=0.2, random_state=0
 )
 
-print(f"Training set size: {X_train.shape[0]} samples")
-print(f"Test set size:     {X_test.shape[0]} samples")
+print(f"\nTraining samples: {len(X_train)}")
+print(f"Testing samples: {len(X_test)}")
 
 
-# -----------------------------------------------------------------------
-# 5. MODEL BUILDING & TRAINING
-# -----------------------------------------------------------------------
-print("\n" + "=" * 60)
-print("STEP 4: MODEL BUILDING & TRAINING")
-print("=" * 60)
-
-# Create the linear regression model object
+# ------------------------------------------------------------
+# STEP 7: Building and training the Simple Linear Regression model
+# ------------------------------------------------------------
 model = LinearRegression()
-
-# Train ("fit") the model — this is where scikit-learn calculates
-# the best-fit slope and intercept using Ordinary Least Squares (OLS),
-# minimizing the sum of squared errors between predictions and actuals.
 model.fit(X_train, y_train)
 
-# The learned parameters of the line:  y = (slope * x) + intercept
+# The model has now learned the equation: y = m*x + c
 slope = model.coef_[0]
 intercept = model.intercept_
-
-print(f"\nModel equation:  {Y_COLUMN} = {slope:.2f} * {X_COLUMN} + {intercept:.2f}")
-print(f"Slope (coefficient): {slope:.2f}")
-print(f"Intercept:           {intercept:.2f}")
-
-# Interpretation for a Sales/Newspaper example:
-# - slope: each additional unit of X increases the predicted Y by this amount
-# - intercept: predicted Y when X = 0
+print(f"\nModel equation: {OUTPUT_COLUMN} = {slope:.2f} * {INPUT_COLUMN} + {intercept:.2f}")
 
 
-# -----------------------------------------------------------------------
-# 6. MODEL EVALUATION
-# -----------------------------------------------------------------------
-print("\n" + "=" * 60)
-print("STEP 5: MODEL EVALUATION")
-print("=" * 60)
+# ------------------------------------------------------------
+# STEP 8: Making predictions on the test set
+# ------------------------------------------------------------
+y_pred = model.predict(X_test)
 
-# Generate predictions on both sets
-y_train_pred = model.predict(X_train)
-y_test_pred = model.predict(X_test)
+# Comparing actual vs predicted values side by side
+comparison_table = pd.DataFrame({"Actual": y_test.values, "Predicted": y_pred})
+print("\nActual vs Predicted values:")
+print(comparison_table)
 
-# --- Metrics on the TEST set (the one that matters most — unseen data) ---
-mse = mean_squared_error(y_test, y_test_pred)
+
+# ------------------------------------------------------------
+# STEP 9: Evaluating the model
+# ------------------------------------------------------------
+mse = mean_squared_error(y_test, y_pred)
 rmse = np.sqrt(mse)
-mae = mean_absolute_error(y_test, y_test_pred)
-r2 = r2_score(y_test, y_test_pred)
+mae = mean_absolute_error(y_test, y_pred)
+r2 = r2_score(y_test, y_pred)
 
-print("\nTest set performance:")
-print(f"  Mean Squared Error (MSE):      {mse:,.2f}")
-print(f"  Root Mean Squared Error(RMSE): {rmse:,.2f}")
-print(f"  Mean Absolute Error (MAE):     {mae:,.2f}")
-print(f"  R-squared (R^2):               {r2:.4f}")
-
-# --- Compare against training set to check for overfitting ---
-r2_train = r2_score(y_train, y_train_pred)
-print(f"\nTrain R^2: {r2_train:.4f}  |  Test R^2: {r2:.4f}")
-print("(If train R^2 is much higher than test R^2, the model may be overfitting.)")
-
-# What these metrics mean:
-# - MSE/RMSE: average squared/root-squared prediction error, in the same
-#   units as the target (RMSE is easier to interpret since it's not squared).
-# - MAE: average absolute error — less sensitive to outliers than MSE.
-# - R^2: proportion of variance in y explained by X. Ranges up to 1.0;
-#   closer to 1 means the model explains the data very well.
+print("\nModel Evaluation:")
+print(f"Mean Squared Error (MSE): {mse:.2f}")
+print(f"Root Mean Squared Error (RMSE): {rmse:.2f}")
+print(f"Mean Absolute Error (MAE): {mae:.2f}")
+print(f"R-squared (R2 Score): {r2:.4f}")
 
 
-# -----------------------------------------------------------------------
-# 7. VISUALIZATION — regression line & residuals
-# -----------------------------------------------------------------------
-print("\n" + "=" * 60)
-print("STEP 6: VISUALIZATION")
-print("=" * 60)
-
-# Plot 1: Regression line fitted on the TRAINING data
-plt.figure()
-plt.scatter(X_train, y_train, color="steelblue", label="Training data", edgecolor="white", s=70)
-plt.plot(X_train, y_train_pred, color="crimson", linewidth=2, label="Regression line")
-plt.title(f"{Y_COLUMN} vs {X_COLUMN} (Training Set)")
-plt.xlabel(X_COLUMN)
-plt.ylabel(Y_COLUMN)
+# ------------------------------------------------------------
+# STEP 10: Visualizing the regression line (Training set)
+# ------------------------------------------------------------
+plt.scatter(X_train, y_train, color="blue", label="Actual (train)")
+plt.plot(X_train, model.predict(X_train), color="red", label="Regression line")
+plt.title(f"{OUTPUT_COLUMN} vs {INPUT_COLUMN} (Training Set)")
+plt.xlabel(INPUT_COLUMN)
+plt.ylabel(OUTPUT_COLUMN)
 plt.legend()
-plt.tight_layout()
-plt.savefig("03_regression_line_train.png", dpi=120)
-plt.close()
-print("Saved plot: 03_regression_line_train.png")
+plt.savefig("regression_line_training.png")
+plt.show()
 
-# Plot 2: Same regression line evaluated against the TEST data
-# (the line's parameters come from training only — this checks generalization)
-plt.figure()
-plt.scatter(X_test, y_test, color="seagreen", label="Test data (actual)", edgecolor="white", s=70)
-plt.plot(X_test, y_test_pred, color="crimson", linewidth=2, label="Regression line (predicted)")
-plt.title(f"{Y_COLUMN} vs {X_COLUMN} (Test Set)")
-plt.xlabel(X_COLUMN)
-plt.ylabel(Y_COLUMN)
+
+# ------------------------------------------------------------
+# STEP 11: Visualizing the regression line (Test set)
+# ------------------------------------------------------------
+plt.scatter(X_test, y_test, color="green", label="Actual (test)")
+plt.plot(X_train, model.predict(X_train), color="red", label="Regression line")
+plt.title(f"{OUTPUT_COLUMN} vs {INPUT_COLUMN} (Test Set)")
+plt.xlabel(INPUT_COLUMN)
+plt.ylabel(OUTPUT_COLUMN)
 plt.legend()
-plt.tight_layout()
-plt.savefig("04_regression_line_test.png", dpi=120)
-plt.close()
-print("Saved plot: 04_regression_line_test.png")
-
-# Plot 3: Residual plot — errors should scatter randomly around 0
-# with no obvious pattern, which confirms a linear model was appropriate.
-residuals = y_test - y_test_pred
-plt.figure()
-plt.scatter(y_test_pred, residuals, color="purple", edgecolor="white", s=70)
-plt.axhline(y=0, color="black", linestyle="--")
-plt.title("Residual Plot (Test Set)")
-plt.xlabel("Predicted values")
-plt.ylabel("Residuals (Actual - Predicted)")
-plt.tight_layout()
-plt.savefig("05_residual_plot.png", dpi=120)
-plt.close()
-print("Saved plot: 05_residual_plot.png")
+plt.savefig("regression_line_test.png")
+plt.show()
 
 
-# -----------------------------------------------------------------------
-# 8. MAKING NEW PREDICTIONS
-# -----------------------------------------------------------------------
-print("\n" + "=" * 60)
-print("STEP 7: PREDICTIONS ON NEW DATA")
-print("=" * 60)
+# ------------------------------------------------------------
+# STEP 12: Predicting for a brand new value
+# ------------------------------------------------------------
+# Example: predicting the sales for a new newspaper advertising budget of 6.5
+new_input = 6.5
+new_input_df = pd.DataFrame({INPUT_COLUMN: [new_input]})
+predicted_output = model.predict(new_input_df)
+print(f"\nPredicted {OUTPUT_COLUMN} for {INPUT_COLUMN} = {new_input}: {predicted_output[0]:.2f}")
 
-# Example: predict the target for a few new, unseen X values.
-# Replace these with whatever inputs make sense for your dataset.
-new_values = pd.DataFrame({X_COLUMN: [2, 5, 10]})
-new_predictions = model.predict(new_values)
 
-for x_val, pred in zip(new_values[X_COLUMN], new_predictions):
-    print(f"  {X_COLUMN} = {x_val}  ->  predicted {Y_COLUMN} = {pred:,.2f}")
-
-print("\nDone! Check the saved .png files for the visualizations.")
+# ------------------------------------------------------------
+# STEP 13: Conclusion
+# ------------------------------------------------------------
+print("\n----------------------------------------------------")
+print("CONCLUSION")
+print("----------------------------------------------------")
+print(f"The correlation between {INPUT_COLUMN} and {OUTPUT_COLUMN} is {correlation:.2f},")
+print("which shows a strong linear relationship between the two variables.")
+print(f"The model achieved an R2 score of {r2:.4f} on the test data, meaning it")
+print("explains a large portion of the variation in the output using just one input.")
+print(f"The average prediction error (RMSE) was about {rmse:.2f}, which is reasonably")
+print("low compared to the overall range of the data.")
+print("This confirms that Simple Linear Regression is a good fit for this dataset.")
