@@ -84,6 +84,6 @@ python -m pytest -q
 2. Click **`Show EDA`** to demonstrate data distribution, missing value checks, and correlation statistics.
 3. Click **`Train Model`** to execute train/test split (80/20) and display regression parameters and evaluation metrics.
 4. Click **`View Graphs`** and use **`Next Graph ⏭`** / **`⏮ Previous Graph`** or Notebook tabs to showcase embedded plots.
-5. Click **`Show Results`** to view actual vs predicted comparisons and project conclusion.
+5. Click **`Show Results`** to view actual vs predicted comparisons.
 6. Enter an input value in **Quick Prediction** and click **`Calculate Prediction`** to demonstrate real-time prediction.
 

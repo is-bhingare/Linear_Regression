@@ -104,8 +104,6 @@ class StudentRegressionApp(tk.Tk):
         btn_graphs = tk.Button(toolbar, text="📈 View Graphs", command=self.on_view_graphs, bg="#0284c7", fg="white", font=("Segoe UI", 9, "bold"), padx=12, pady=4, relief="flat", cursor="hand2")
         btn_graphs.pack(side="left", padx=4)
 
-        btn_results = tk.Button(toolbar, text="📑 Show Results", command=self.on_show_results, bg="#d97706", fg="white", font=("Segoe UI", 9, "bold"), padx=12, pady=4, relief="flat", cursor="hand2")
-        btn_results.pack(side="left", padx=4)
 
         btn_predict = tk.Button(toolbar, text="🎯 Predict", command=self.on_predict_popup, bg="#059669", fg="white", font=("Segoe UI", 9, "bold"), padx=12, pady=4, relief="flat", cursor="hand2")
         btn_predict.pack(side="left", padx=4)
@@ -220,16 +218,55 @@ class StudentRegressionApp(tk.Tk):
 
     def _load_default_sample(self):
         """Attempt to load default Advertising.csv dataset."""
-        if os.path.exists("Advertising.csv"):
-            self.load_csv_file("Advertising.csv")
+        sample_path = self._resolve_filepath("Advertising.csv")
+        if os.path.exists(sample_path):
+            self.load_csv_file(sample_path)
         else:
             self.log("💡 Welcome to Linear Regression Studio!")
             self.log("Click '📂 Load Dataset' to choose a CSV file or select sample data.\n")
 
+    def _resolve_filepath(self, filepath: str) -> str:
+        """Try commonly used locations for sample files and return a usable path.
+
+        Search order:
+        - absolute path as given
+        - current working directory
+        - repository root relative to this file (two levels up)
+        - same directory as this module
+        Returns the candidate path (may not exist) to be used by callers.
+        """
+        # Absolute path check
+        if os.path.isabs(filepath) and os.path.exists(filepath):
+            return filepath
+
+        # CWD
+        cwd_candidate = os.path.abspath(filepath)
+        if os.path.exists(cwd_candidate):
+            return cwd_candidate
+
+        # Project root (two levels up from this file)
+        module_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.normpath(os.path.join(module_dir, "..", ".."))
+        project_candidate = os.path.join(project_root, filepath)
+        if os.path.exists(project_candidate):
+            return project_candidate
+
+        # Same directory as this module
+        local_candidate = os.path.join(module_dir, filepath)
+        if os.path.exists(local_candidate):
+            return local_candidate
+
+        # Fallback to provided filepath
+        return filepath
+
     def load_csv_file(self, filepath: str):
         """Load and initialize a CSV dataset."""
         try:
-            df = self.pipeline.load_csv(filepath)
+            resolved = self._resolve_filepath(filepath)
+            if not os.path.exists(resolved):
+                raise FileNotFoundError(f"Dataset not found: {filepath} (tried: {resolved})")
+
+            df = self.pipeline.load_csv(resolved)
             self.loaded_filepath = filepath
             cols = self.pipeline.get_column_names()
 
